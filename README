@@ -38,6 +38,19 @@ $ tree /dev/input/by-path/
 ...
 # altalt /dev/input/by-path/platform-4a31c000.keypad-event
 
+N900 users probably want to pass KEY_LEFTCTRL as the modifier key to avoid
+conflicts with Maemo keys. This can be done with --keycode option:
+
+# altalt --keycode=29 /dev/input/by-path/...
+
+To configure altalt to start automatically, see the scripts directory.
+Addtionally /etc/conf.d/altalt file must be configured with:
+
+ALTALT_OPTS='--keycode=56'
+ALTALT_DEV="/dev/input/by-path/platform-4a31c000.keypad-event"
+
+Where N900 users should use --keycode=29 and the device path to the keyboard.
+
 Note that altalt relies on Linux uinput kernel module, and needs write access
 to /dev/uinput. Multiple instances of altalt can be started to handle several
 keyboards, and it can be used via udev for hot pluggable keyboards.

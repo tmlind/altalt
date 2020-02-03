@@ -10,13 +10,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <linux/input.h>
 #include <linux/uinput.h>
 
-#define DEFAULT_MODIFIER	KEY_LEFTALT
 #define MAX_TAPS		3
 
 #define MOD_KEY(old, new, needs_shift)	\
@@ -42,6 +42,7 @@ enum mod_table {
 
 static int armed;
 static int taps;
+static unsigned int default_modifier = KEY_LEFTALT;
 
 /* Keys with alt + alt */
 static const struct mod_key_map keys_altalt[] = {
@@ -269,13 +270,13 @@ static int handle_events(int fd, int evfd)
 
 		switch (ev.value) {
 		case 1:
-			if (ev.code == DEFAULT_MODIFIER)
+			if (ev.code == default_modifier)
 				taps++;
 			if (taps > MAX_TAPS) {
 				disarm_handler(fd);
 				break;
 			}
-			if (ev.code != DEFAULT_MODIFIER) {
+			if (ev.code != default_modifier) {
 				feed_modifier(fd, evfd, ev.code, 1);
 				active = 1;
 			}
@@ -285,14 +286,14 @@ static int handle_events(int fd, int evfd)
 				send_key(evfd, ev.code, 2);
 			break;
 		case 0:
-			if (ev.code == DEFAULT_MODIFIER && taps > 1)
+			if (ev.code == default_modifier && taps > 1)
 				arm_handler(fd);
-			if (active || ev.code != DEFAULT_MODIFIER) {
+			if (active || ev.code != default_modifier) {
 				feed_modifier(fd, evfd, ev.code, 0);
 				disarm_handler(fd);
 				active = 0;
 			}
-			if (ev.code != DEFAULT_MODIFIER)
+			if (ev.code != default_modifier)
 				taps = 0;
 			break;
 		default:
@@ -308,14 +309,43 @@ int main(int argc, char **argv)
 {
 	const char *device;
 	int fd, evfd, error;
+	const char delimiters[] = { "=", };
+	char *buf, *token;
 
 	if (argc < 2) {
-		printf("Usage: %s input_device\n\n", argv[0]);
+		printf("Usage: %s [--keycode=hex_number] input_device\n\n",
+		       argv[0]);
 
-		return -1;
+		return -EINVAL;
 	}
 
-	device = argv[1];
+	if (!strncmp("--keycode=", argv[1], 10)) {
+		buf = argv[1];
+		token = strsep(&buf, delimiters);
+		if (!token || !buf) {
+			fprintf(stderr, "Missing keycode\n");
+
+			return -EINVAL;
+		}
+
+		default_modifier = atoi(buf);
+		if (default_modifier < 0) {
+			fprintf(stderr, "Unknown keycode: %i\n",
+				default_modifier);
+
+			return -EINVAL;
+		}
+
+		if (argc < 3) {
+			fprintf(stderr, "No keyboard device passed\n");
+
+			return -EINVAL;
+		}
+
+		device = argv[2];
+	} else {
+		device = argv[1];
+	}
 
 	fd = open(device, O_RDONLY);
 	if (fd < 0) {
