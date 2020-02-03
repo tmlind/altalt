@@ -1,0 +1,27 @@
+#!/sbin/openrc-run
+#
+# Start-up script for altatl
+#
+# To use, create /etc/conf.d/altalt with the keyboard device in it.
+# For example on droid4, handle omap4-keypad with altalt using:
+#
+# ALTALT_DEV="/dev/input/by-path/platform-4a31c000.keypad-event"
+#
+
+name="altalt"
+command="/usr/bin/altalt"
+command_args="${ALTALT_DEV}"
+pidfile="/var/run/altalt.pid"
+start_stop_daemon_args="--background --make-pidfile"
+
+depend() {
+        need dev
+        after hwdrivers
+}
+
+start_pre() {
+	if ! [ -n "$ALTALT_DEV" ]; then
+		eerror "ALTALT_DEV is not set"
+		return 1
+	fi
+}
