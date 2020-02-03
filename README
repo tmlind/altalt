@@ -40,4 +40,14 @@ $ tree /dev/input/by-path/
 
 Note that altalt relies on Linux uinput kernel module, and needs write access
 to /dev/uinput. Multiple instances of altalt can be started to handle several
-keybaords, and it can be used via udev for hot pluggable keyboards.
+keyboards, and it can be used via udev for hot pluggable keyboards.
+
+For remapping scancodes to keycodes, other tools need to be used. For example,
+to remap droid4 OK key to KEY_LEFTMETA, create /etc/udev/hwdb.d/50-droid4.hwdb
+with the following lines:
+
+evdev:input:b0019v0001p0001e0001-*
+ KEYBOARD_KEY_3b=leftmeta
+
+Then update the hwdb with udevadm hwdb --update, reload udev or reboot system.
+And then you might want to configure xmodmap for locale specific keys.
