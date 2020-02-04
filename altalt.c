@@ -43,9 +43,10 @@ enum mod_table {
 static int armed;
 static int taps;
 static unsigned int default_modifier = KEY_LEFTALT;
+static const struct mod_key_table **maps;
 
-/* Keys with alt + alt */
-static const struct mod_key_map keys_altalt[] = {
+/* Droid4 keys with alt + alt */
+static const struct mod_key_map keys_altalt_droid4[] = {
 	/* Top row */
 	MOD_KEY(KEY_1, KEY_ESC, 0),
 	MOD_KEY(KEY_9, KEY_LEFTBRACE, 0),
@@ -71,8 +72,8 @@ static const struct mod_key_map keys_altalt[] = {
 	MOD_KEY(KEY_DOWN, KEY_PAGEDOWN, 0),
 };
 
-/* Keys with alt + alt + alt */
-static const struct mod_key_map keys_altaltalt[] = {
+/* Droid4 keys with alt + alt + alt */
+static const struct mod_key_map keys_altaltalt_droid4[] = {
 	/* Top row */
 	MOD_KEY(KEY_1, KEY_F1, 0),
 	MOD_KEY(KEY_1, KEY_F1, 0),
@@ -92,18 +93,18 @@ static const struct mod_key_map keys_altaltalt[] = {
 	/* Third row */
 };
 
-static const struct mod_key_table map_altalt = {
-	.key_map = keys_altalt,
-	.nr_keys = ARRAY_SIZE(keys_altalt),
+static const struct mod_key_table map_altalt_droid4 = {
+	.key_map = keys_altalt_droid4,
+	.nr_keys = ARRAY_SIZE(keys_altalt_droid4),
 };
 
-static const struct mod_key_table map_altaltalt = {
-	.key_map = keys_altaltalt,
-	.nr_keys = ARRAY_SIZE(keys_altaltalt),
+static const struct mod_key_table map_altaltalt_droid4 = {
+	.key_map = keys_altaltalt_droid4,
+	.nr_keys = ARRAY_SIZE(keys_altaltalt_droid4),
 };
 
-static const struct mod_key_table *maps[MAP_LAST] = {
-	&map_altalt, &map_altaltalt,
+static const struct mod_key_table *maps_droid4[MAP_LAST] = {
+	&map_altalt_droid4, &map_altaltalt_droid4,
 };
 
 static struct uinput_setup usetup = {
@@ -310,6 +311,7 @@ int main(int argc, char **argv)
 	const char *device;
 	int fd, evfd, error;
 	const char delimiters[] = { "=", };
+	char name[256] = "Unknown";
 	char *buf, *token;
 
 	if (argc < 2) {
@@ -354,6 +356,22 @@ int main(int argc, char **argv)
 		return fd;
 	}
 
+	error = ioctl(fd, EVIOCGNAME(sizeof(name)), name);
+	if (error < 0) {
+		fprintf(stderr, "Could not get keyboard name: %i\n", error);
+		goto err_close_keyboard;
+	}
+	printf("Keyboard: %s\n", name);
+
+	if (!strncmp("4a31c000.keypad", name, 15))
+		maps = maps_droid4;
+
+	if (!maps) {
+		fprintf(stderr, "Please add device specific map for: %s\n", name);
+		/* Just default to droid4 map for now */
+		maps = maps_droid4;
+	}
+
 	evfd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (evfd < 0) {
 		fprintf(stderr, "Could not open /dev/uinput: %i\n", evfd);
@@ -386,7 +404,8 @@ int main(int argc, char **argv)
 
 err_close:
 	close(evfd);
+err_close_keyboard:
 	close(fd);
 
-	return 0;
+	return error;
 }
