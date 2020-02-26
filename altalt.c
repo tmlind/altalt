@@ -70,6 +70,8 @@ static const struct mod_key_map keys_altalt_droid4[] = {
 	MOD_KEY(KEY_SLASH, KEY_BACKSLASH, 0),
 	MOD_KEY(KEY_UP, KEY_PAGEUP, 0),
 	MOD_KEY(KEY_DOWN, KEY_PAGEDOWN, 0),
+	MOD_KEY(KEY_LEFT, KEY_HOME, 0),
+	MOD_KEY(KEY_RIGHT, KEY_END, 0),
 };
 
 /* Droid4 keys with alt + alt + alt */

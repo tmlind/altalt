@@ -1,4 +1,4 @@
-Linux keycode remapper based on number alt key pressed
+Linux keycode remapper based on number of times alt key pressed
 
 Altalt can be used to generate keycodes on keyboards with missing keys
 based on the number of alt key presses. For example, Alt + Alt followed
@@ -24,11 +24,17 @@ Alt + Alt + . = :
 Alt + Alt + / = \
 Alt + Alt + Up = Page Up
 Alt + Alt + Down = Page Down
+Alt + Alt + Left = Home
+Alt + Alt + Right = End
 
 Alt + Alt + Alt + 1 = F1
 ...
 Alt + Alt + Alt + 0 = F10
-Alt + Alt + Alt ' = ~
+Alt + Alt + Alt + ' = ~
+
+Additionally:
+Shift + Alt + Alt + 9 = {
+Shift + Alt + Alt + 0 = }
 
 To use altalt, just start it from a start-up script on init with the sysfs
 path to the selected keyboard as the argument. Or just start it manually to
