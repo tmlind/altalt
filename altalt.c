@@ -51,9 +51,9 @@ static const struct mod_key_map keys_altalt_droid4[] = {
 	MOD_KEY(KEY_1, KEY_ESC, 0),
 	MOD_KEY(KEY_9, KEY_LEFTBRACE, 0),
 	MOD_KEY(KEY_0, KEY_RIGHTBRACE, 0),
-	MOD_KEY(KEY_APOSTROPHE, KEY_GRAVE, 0),
 
 	/* Second row */
+	MOD_KEY(KEY_APOSTROPHE, KEY_GRAVE, 0),	/* ` */
 	MOD_KEY(KEY_E, KEY_EURO, 0),
 	MOD_KEY(KEY_BACKSPACE, KEY_DELETE, 0),
 
