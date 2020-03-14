@@ -1,0 +1,2 @@
+ALTALT_OPTS='--keycode=56'
+ALTALT_DEV="/dev/input/by-path/platform-4a31c000.keypad-event"

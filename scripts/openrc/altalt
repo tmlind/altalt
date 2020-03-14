@@ -15,8 +15,13 @@ pidfile="/var/run/altalt.pid"
 start_stop_daemon_args="--background --make-pidfile"
 
 depend() {
-        need dev
-        after hwdrivers
+	if grep -i -e alpine /etc/os-release > /dev/null 2>&1; then
+		need dev
+		after hwdrivers
+	elif grep -i -e devuan /etc/os-release > /dev/null 2>&1; then
+		need eudev
+		after kmod
+	fi
 }
 
 start_pre() {
