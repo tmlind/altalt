@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include <linux/input.h>
 #include <linux/uinput.h>
@@ -32,6 +33,8 @@ struct mod_key_map {
 struct mod_key_table {
 	const struct mod_key_map *key_map;
 	int nr_keys;
+	const char *kbd_bl_dev;
+	int kbd_default_brightness;
 };
 
 enum mod_table {
@@ -40,10 +43,47 @@ enum mod_table {
 	MAP_LAST,
 };
 
+static int kbd_brightness;
 static int armed;
 static int taps;
 static unsigned int default_modifier = KEY_LEFTALT;
 static const struct mod_key_table **maps;
+
+static void cmd_toggle_kbd_backlight(const char *dev, int default_brightness)
+{
+	unsigned int val;
+	struct stat sb;
+	char buf[4];
+	int fd, err;
+
+	err = stat(dev, &sb);
+	if (err)
+		return;
+
+	fd = open(dev, O_RDWR);
+	if (fd < 0)
+		return;
+
+	err = read(fd, buf, 4);
+	if (err < 0)
+		goto out_close;
+
+	val = atol(buf);
+
+	if (val) {
+		kbd_brightness = val;
+		val = 0;
+	} else {
+		if (!kbd_brightness)
+			kbd_brightness = default_brightness;
+		val = kbd_brightness;
+	}
+
+	dprintf(fd, "%i\n", val);
+
+out_close:
+	close(fd);
+}
 
 /* Droid4 keys with alt + alt */
 static const struct mod_key_map keys_altalt_droid4[] = {
@@ -67,6 +107,7 @@ static const struct mod_key_map keys_altalt_droid4[] = {
 	MOD_KEY(KEY_DOT, KEY_SEMICOLON, 1),	/* : */
 
 	/* Bottom row */
+	MOD_KEY(KEY_SPACE, KEY_LIGHTS_TOGGLE, 0),
 	MOD_KEY(KEY_SLASH, KEY_BACKSLASH, 0),
 	MOD_KEY(KEY_UP, KEY_PAGEUP, 0),
 	MOD_KEY(KEY_DOWN, KEY_PAGEDOWN, 0),
@@ -98,6 +139,8 @@ static const struct mod_key_map keys_altaltalt_droid4[] = {
 static const struct mod_key_table map_altalt_droid4 = {
 	.key_map = keys_altalt_droid4,
 	.nr_keys = ARRAY_SIZE(keys_altalt_droid4),
+	.kbd_bl_dev = "/sys/class/leds/lm3532::kbd_backlight/brightness",
+	.kbd_default_brightness = 80,
 };
 
 static const struct mod_key_table map_altaltalt_droid4 = {
@@ -199,6 +242,7 @@ err_out:
 
 static int feed_modifier(int fd, int evfd, int keycode, int down)
 {
+	static const struct mod_key_table *keys;
 	enum mod_table index = 0;
 	int error, new, shift;
 
@@ -213,9 +257,17 @@ static int feed_modifier(int fd, int evfd, int keycode, int down)
 		return 0;
 	}
 
-	error = find_keycode(maps[index], keycode, &new, &shift);
+	keys = maps[index];
+
+	error = find_keycode(keys, keycode, &new, &shift);
 	if (error)
 		return 0;
+
+	if (new == KEY_LIGHTS_TOGGLE && down) {
+		if (keys->kbd_bl_dev && keys->kbd_default_brightness)
+			cmd_toggle_kbd_backlight(keys->kbd_bl_dev,
+						 keys->kbd_default_brightness);
+	}
 
 	if (shift && down)
 		send_key(evfd, KEY_LEFTSHIFT, 1);
